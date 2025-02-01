@@ -10,6 +10,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: ToDoList(),
+      theme: ThemeData(
+        primarySwatch: Colors.teal,),
     );
   }
 }
@@ -18,10 +20,15 @@ class ToDoList extends StatefulWidget {
   const ToDoList({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _ToDoListState createState() => _ToDoListState();
 }
 
 class _ToDoListState extends State<ToDoList> {
+
+  static const primaryColor = Colors.black;
+  static const secondaryColor = Colors.tealAccent;
+  
   final List<ToDoItem> _toDoItems = [
     ToDoItem(id: 1, title: 'Buy milk', completed: false, dueDate: DateTime.now().add(Duration(days: 1))),
     ToDoItem(id: 2, title: 'Walk the dog', completed: false, dueDate: DateTime.now().add(Duration(days: 2))),
@@ -71,12 +78,12 @@ class _ToDoListState extends State<ToDoList> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: primaryColor,
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: primaryColor,
         actions: [
           PopupMenuButton(
-            iconColor: Colors.yellow,
+            iconColor: secondaryColor,
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'title',
@@ -102,14 +109,24 @@ class _ToDoListState extends State<ToDoList> {
         children: [
           Padding(
             padding: const EdgeInsets.all(20.0),
-            child: TextField(
-              style: TextStyle(color: Colors.yellow),
+            child:  TextField(
+
+              style: TextStyle(color: secondaryColor),
               controller: _textController,
               decoration: InputDecoration(
-                focusColor: Colors.yellow,
+                focusColor: secondaryColor,
                 labelText: 'Add new to-do item',
-                labelStyle: TextStyle(color: Colors.yellow),
+                labelStyle: TextStyle(color: secondaryColor),
                 border: OutlineInputBorder(),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(
+                      color: secondaryColor, width: 3.0),
+                  ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(
+                      color: secondaryColor, width: 1.0),
+                  ),
+
               ),
             ),
           ),
@@ -121,13 +138,13 @@ class _ToDoListState extends State<ToDoList> {
               itemBuilder: (context, index) {
                 return Card(
                   margin: EdgeInsets.symmetric(horizontal: 7, vertical: 6),
-                  color: Colors.yellow,
+                  color: secondaryColor,
                   elevation: 3,
                   child: ListTile(
                     title: Text(
                       _toDoItems[index].title,
                       style: TextStyle(
-                        color: Colors.black,
+                        color: primaryColor,
                         fontWeight: FontWeight.bold,
                         decoration: _toDoItems[index].completed
                             ? TextDecoration.lineThrough
@@ -163,8 +180,8 @@ class _ToDoListState extends State<ToDoList> {
         onPressed: _addToDoItem,
         elevation: 10,
         shape: CircleBorder(),
-        backgroundColor: Colors.yellow,
-        child: Icon(Icons.add , color: Colors.black, ),
+        backgroundColor: secondaryColor,
+        child: Icon(Icons.add , color: primaryColor, ),
       ),
     );
   }
