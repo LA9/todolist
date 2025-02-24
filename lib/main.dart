@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-
+import 'package:sqflite/sqflite.dart';
+import 'package:todolist/DataBaseHelper.dart';
 void main() {
   runApp(MyApp());
 }
@@ -25,44 +26,60 @@ class ToDoList extends StatefulWidget {
 }
 
 class _ToDoListState extends State<ToDoList> {
-
+final DatabaseHelper _databaseHelper = DatabaseHelper();
   static const primaryColor = Colors.black;
   static const secondaryColor = Colors.tealAccent;
   
-  final List<ToDoItem> _toDoItems = [
-    ToDoItem(id: 1, title: 'Buy milk', completed: false, dueDate: DateTime.now().add(Duration(days: 1))),
-    ToDoItem(id: 2, title: 'Walk the dog', completed: false, dueDate: DateTime.now().add(Duration(days: 2))),
-    ToDoItem(id: 3, title: 'Do laundry', completed: false, dueDate: DateTime.now().add(Duration(days: 3))),
-  ];
+  List<ToDoItem> _toDoItems = [];
 
   final _textController = TextEditingController();
 
-  void _addToDoItem() {
+  void _addToDoItem() async {
     if (_textController.text.isNotEmpty) {
-      setState(() {
-        _toDoItems.add(ToDoItem(
+     
+      ToDoItem item = ToDoItem(
           id: _toDoItems.length + 1,
           title: _textController.text,
           completed: false,
           dueDate: DateTime.now().add(Duration(days: 0)),
-        ));
-        _textController.clear();
+      );
+      await _databaseHelper.insert(item);
+      setState(() {
+        _toDoItems.add(item);
       });
+        _textController.clear();
+
     }
   }
 
-  void _toggleCompleted(ToDoItem item) {
-    setState(() {
+  void _toggleCompleted(ToDoItem item) async {
+    setState((){
       item.completed = !item.completed;
     });
+    await _databaseHelper.update(item);
+    
   }
 
-  void _deleteToDoItem(ToDoItem item) {
+
+  void _deleteToDoItem(ToDoItem item) async {
+    await _databaseHelper.delete(item);
     setState(() {
       _toDoItems.remove(item);
     });
   }
+  @override
+  void initState() {
+    super.initState();
+    _loadItems();
+  }
 
+
+  void _loadItems() async {
+    List<ToDoItem> items = await _databaseHelper.getAllItems();
+    setState(() {
+      _toDoItems = items;
+    });
+  }
   void _sortByTitle() {
     setState(() {
       _toDoItems.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
@@ -91,7 +108,7 @@ class _ToDoListState extends State<ToDoList> {
               ),
               PopupMenuItem(
                 value: 'dueDate',
-                child: Text('Sort by Due Date'),
+                child: Text('Sort by Date'),
               ),
             ],
             onSelected: (value) {
@@ -105,29 +122,32 @@ class _ToDoListState extends State<ToDoList> {
         ],
       ),
       body: Column(
-        
         children: [
           Padding(
-            padding: const EdgeInsets.all(20.0),
-            child:  TextField(
-
+            padding: const EdgeInsets.all(25.0),
+            
+            child: TextField(
+              cursorColor: secondaryColor,
               style: TextStyle(color: secondaryColor),
               controller: _textController,
               decoration: InputDecoration(
+                fillColor: const Color.fromARGB(110, 138, 138, 138),
+                filled: true,
                 focusColor: secondaryColor,
-                labelText: 'Add new to-do item',
+                labelText: 'Add to-do',
                 labelStyle: TextStyle(color: secondaryColor),
                 border: OutlineInputBorder(),
                 focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                      color: secondaryColor, width: 3.0),
-                  ),
+                  borderSide: BorderSide(color: secondaryColor, width: 3.0),
+                ),
+                        
                 enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(
-                      color: secondaryColor, width: 1.0),
-                  ),
-
+                  borderSide: BorderSide(color: secondaryColor, width: 1.0),
+                ),
               ),
+                
+            
+            
             ),
           ),
           SizedBox(height: 10),
@@ -140,34 +160,57 @@ class _ToDoListState extends State<ToDoList> {
                   margin: EdgeInsets.symmetric(horizontal: 7, vertical: 6),
                   color: secondaryColor,
                   elevation: 3,
-                  child: ListTile(
-                    title: Text(
-                      _toDoItems[index].title,
-                      style: TextStyle(
-                        color: primaryColor,
-                        fontWeight: FontWeight.bold,
-                        decoration: _toDoItems[index].completed
-                            ? TextDecoration.lineThrough
-                            : null,
+                  child: Dismissible(
+                    key: Key(_toDoItems[index].id.toString()),
+                    background: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Padding(
+                          padding: const EdgeInsets.only(left: 16.0),
+                          child: Icon(
+                            Icons.delete,
+                            color: Colors.white,
+                          ),
+                        ),
                       ),
                     ),
-                    subtitle: Text(_toDoItems[index].dueDate.toString()),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Checkbox(
-                          value: _toDoItems[index].completed,
-                          onChanged: (value) {
-                            _toggleCompleted(_toDoItems[index]);
-                          },
+                    onDismissed: (direction) {
+                      _deleteToDoItem(_toDoItems[index]);
+                    },
+                    
+                    child: ListTile(
+                      title: Text(
+                        _toDoItems[index].title,
+                        style: TextStyle(
+                          color: primaryColor,
+                          fontWeight: FontWeight.bold,
+                          decoration: _toDoItems[index].completed
+                              ? TextDecoration.lineThrough
+                              : null,
                         ),
-                        IconButton(
-                          icon: Icon(Icons.delete),
-                          onPressed: () {
-                            _deleteToDoItem(_toDoItems[index]);
-                          },
-                        ),
-                      ],
+                      ),
+                      subtitle: Text(_toDoItems[index].dueDate.toString()),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Checkbox(
+                            value: _toDoItems[index].completed,
+                            onChanged: (value) {
+                              _toggleCompleted(_toDoItems[index]);
+                            },
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.delete),
+                            onPressed: () {
+                              _deleteToDoItem(_toDoItems[index]);
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 );
@@ -194,4 +237,13 @@ class ToDoItem {
   DateTime? dueDate;
 
   ToDoItem({this.id = 0, this.title = '', this.completed = false, this.dueDate});
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'completed': completed ? 1 : 0,
+      'dueDate': dueDate?.toIso8601String(),
+    };
+  }
 } 
